@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">CoTSerial</string>
+    <!-- description -->
+    <string name="app_desc">A bidirectional serial plugin for sending and receiving CoT</string>
+
+
+
+
+</resources>
