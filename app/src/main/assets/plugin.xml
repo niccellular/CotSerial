@@ -3,13 +3,8 @@
 <plugin>
 
     <extension
-        type="transapps.maps.plugin.lifecycle.Lifecycle"
-        impl="com.atakmap.android.cotserial.plugin.cotserialLifecycle"
-        singleton="true" />
-
-    <extension
-        type="transapps.maps.plugin.tool.ToolDescriptor"
-        impl="com.atakmap.android.cotserial.plugin.cotserialTool"
+        type="gov.tak.api.plugin.IPlugin"
+        impl="com.atakmap.android.cotserial.plugin.CotSerialPlugin"
         singleton="true" />
 
 </plugin>

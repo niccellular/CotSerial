@@ -9,9 +9,9 @@
 buildscript {
 
     ext.PLUGIN_VERSION = "1.0"
-    ext.ATAK_VERSION = "4.8.1"
+    ext.ATAK_VERSION = "5.5.0"
 
-    def takdevVersion = '2.+'
+    def takdevVersion = '3.+'
 
     ext.getValueFromPropertiesFile = { propFile, key ->
         if(!propFile.isFile() || !propFile.canRead())
@@ -61,7 +61,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.2.2'
+        classpath 'com.android.tools.build:gradle:8.8.2'
         if(isDevKitEnabled()) {
             classpath "com.atakmap.gradle:atak-gradle-takdev:${takdevVersion}"
         } else {
@@ -72,7 +72,6 @@ buildscript {
 
 allprojects {
     repositories {
-        mavenCentral()
         google()
         mavenCentral()
         mavenLocal()
@@ -86,23 +85,29 @@ apply plugin: 'com.android.application'
 apply plugin: 'atak-takdev-plugin'
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.3"
+    compileSdk 35
+    namespace 'com.atakmap.android.cotserial.plugin'
+
+    buildFeatures {
+        buildConfig = true
+    }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
-    dexOptions {
-        jumboMode = true
+    // this is required and should not be removed otherwise the TAK 
+    // inner signing check will fail and the plugin will not load
+    bundle {
+        storeArchive {
+            enable = false
+        }
     }
 
-    lintOptions {
-        checkReleaseBuilds true
-        // Or, if you prefer, you can continue to check for errors in release builds,
-        // but continue the build even when errors are found:
+    lint {
         abortOnError true
+        checkReleaseBuilds true
     }
 
     signingConfigs {
@@ -145,7 +150,7 @@ android {
         }
         release {
             minifyEnabled true
-            proguardFile 'proguard-gradle.txt'
+            proguardFiles 'proguard-gradle.txt', 'proguard-gradle-repackage.txt'
             signingConfig signingConfigs.release
             matchingFallbacks = ['odk']
         }
@@ -162,10 +167,11 @@ android {
     }
 
     packagingOptions {
-        exclude 'META-INF/INDEX.LIST'
-        jniLibs {
-            useLegacyPackaging = true
+        resources {
+            excludes += ['META-INF/INDEX.LIST']
         }
+        // Extract native libraries from the APK - required for plugin loading
+        jniLibs.useLegacyPackaging true
     }
 
     sourceSets {
@@ -191,16 +197,50 @@ android {
 
     defaultConfig {
         minSdkVersion 21
-        ndk {
-            abiFilters "armeabi-v7a", "arm64-v8a", "x86"
+        targetSdkVersion 34
+
+        def runTasks = gradle.startParameter.taskNames
+        if(runTasks.toString().contains('bundle')) {
+            ndk {
+                abiFilters "armeabi-v7a", "arm64-v8a"
+            }
+        } else { 
+            ndk {
+                abiFilters "armeabi-v7a", "arm64-v8a", "x86"
+            }
         }
     }
 }
 
 
+afterEvaluate {
+    project.file('proguard-gradle-repackage.txt').text = "-repackageclasses atakplugin.${rootProject.getName()}"
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: '*.jar')
-    //implementation 'com.github.mik3y:usb-serial-for-android:3.4.6'
-    //annotationProcessor 'com.github.mik3y:usb-serial-for-android:3.4.6'
+    implementation 'com.github.mik3y:usb-serial-for-android:3.4.6'
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'androidx.core') {
+            details.useVersion "1.15.0"
+        }
+        if (details.requested.group == 'androidx.lifecycle') {
+            details.useVersion "2.8.7" 
+        }
+        if (details.requested.group == 'androidx.fragment') {
+            details.useVersion "1.8.5"
+        }
+    }   
+}           
+        
+configurations.implementation {
+       exclude group: 'androidx.core', module: 'core-ktx'
+       exclude group: 'androidx.core', module: 'core'
+       exclude group: 'androidx.fragment', module: 'fragment'
+       exclude group: 'androidx.lifecycle', module: 'lifecycle'
+       exclude group: 'androidx.lifecycle', module: 'lifecycle-process'
 }
 

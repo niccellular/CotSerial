@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.view.View;
 import android.widget.NumberPicker;
 
@@ -186,7 +187,11 @@ public class cotserialDropDownReceiver extends DropDownReceiver implements
             Log.d(TAG, "Service started");
         } else {
             try {
-                PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(getActivity().getApplicationContext(), 0, new Intent(ACTION_USB_PERMISSION), 0);
+                int flags = 0;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    flags = PendingIntent.FLAG_IMMUTABLE;
+                }
+                PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(getActivity().getApplicationContext(), 0, new Intent(ACTION_USB_PERMISSION), flags);
                 manager.requestPermission(driver.getDevice(), usbPermissionIntent);
             } finally {
                 Log.d(TAG, "Service started");
